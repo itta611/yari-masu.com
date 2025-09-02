@@ -1,4 +1,5 @@
 import { ClockIcon, UsersIcon } from "lucide-react";
+import { ReservationDialog } from "./reservation-dialog";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -19,10 +20,12 @@ export default function Home() {
             {new Date().getHours()}時{new Date().getMinutes()}分時点
           </div>
         </div>
-        <Button className="w-full mt-4" size="lg">
-          <UsersIcon />
-          予約する
-        </Button>
+        <ReservationDialog>
+          <Button className="w-full mt-4" size="lg">
+            <UsersIcon />
+            予約する
+          </Button>
+        </ReservationDialog>
       </div>
       <div className="absolute right-3 left-3 bottom-3 text-right text-slate-400 m-auto">
         <a
