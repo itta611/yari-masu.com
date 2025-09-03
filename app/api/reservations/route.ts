@@ -8,9 +8,8 @@ interface Reservation {
 }
 
 function generateReservationId(): string {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 8);
-  return `${timestamp}-${randomPart}`.toUpperCase();
+  const randomPart = Math.random().toString(36).substring(2, 10);
+  return `${randomPart}`.toUpperCase();
 }
 
 export async function POST() {
@@ -28,13 +27,15 @@ export async function POST() {
 
     if (latestReservationIds.length > 0) {
       // 最新の予約を取得
-      const latestReservation = await kv.get<Reservation>(`reservation:${latestReservationIds[0]}`);
-      
+      const latestReservation = await kv.get<Reservation>(
+        `reservation:${latestReservationIds[0]}`
+      );
+
       if (latestReservation && latestReservation.reservationTime) {
         // 最新の予約の終了時間（reservationTime + 2分）
         const latestEndTime = new Date(latestReservation.reservationTime);
         latestEndTime.setMinutes(latestEndTime.getMinutes() + 2);
-        
+
         if (latestEndTime > now) {
           // 最新の予約がまだ終了していない場合、その終了時間を新しい予約時間とする
           reservationTime = latestEndTime;
@@ -105,7 +106,7 @@ export async function GET(request: Request) {
 
     // 特定のIDの予約を取得
     const reservation = await kv.get<Reservation>(`reservation:${id}`);
-    
+
     if (!reservation) {
       return NextResponse.json(
         { success: false, error: "Reservation not found" },
@@ -117,7 +118,7 @@ export async function GET(request: Request) {
     const reservationEndTime = new Date(reservation.reservationTime);
     reservationEndTime.setMinutes(reservationEndTime.getMinutes() + 2);
     const now = new Date();
-    
+
     const isExpired = reservationEndTime < now;
 
     return NextResponse.json({

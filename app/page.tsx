@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CancelDialog } from "./cancel-dialog";
+import { useToast } from "@/components/hooks/use-toast";
 
 interface Reservation {
   id: string;
@@ -16,6 +17,8 @@ export default function Home() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
+  const [justReserved, setJustReserved] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkReservation = async () => {
@@ -44,6 +47,13 @@ export default function Home() {
               setReservation(null);
             } else {
               setReservation(data.reservation);
+              // URLパラメータをチェックして新規予約かどうか確認
+              const urlParams = new URLSearchParams(window.location.search);
+              if (urlParams.get("reserved") === "true") {
+                setJustReserved(true);
+                // URLからパラメータを削除
+                window.history.replaceState({}, "", window.location.pathname);
+              }
             }
           } else {
             // 予約が見つからない場合、cookieを削除
@@ -86,7 +96,7 @@ export default function Home() {
 
       if (data.success) {
         // ページをリロードして予約状態を反映
-        window.location.reload();
+        window.location.href = "/?reserved=true";
       } else {
         alert("予約に失敗しました。もう一度お試しください。");
         setIsReserving(false);
@@ -97,6 +107,16 @@ export default function Home() {
       setIsReserving(false);
     }
   };
+
+  useEffect(() => {
+    if (justReserved && reservation) {
+      toast({
+        title: "予約完了",
+        description: `ヤリーマした！予約完了。`,
+      });
+      setJustReserved(false);
+    }
+  }, [justReserved, reservation, toast]);
 
   if (isLoading) {
     return (
