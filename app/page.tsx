@@ -1,11 +1,11 @@
 "use client";
 
-import { CircleSlashIcon, ClockIcon, UsersIcon } from "lucide-react";
+import { ClockIcon, UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { CancelDialog } from "./cancel-dialog";
 import { useToast } from "@/components/hooks/use-toast";
+import { ReservationStatus } from "./reservation-status";
 
 interface Reservation {
   id: string;
@@ -95,13 +95,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getHours()}時${date
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}分`;
-  };
 
   const handleReservation = async () => {
     setIsReserving(true);
@@ -168,31 +161,7 @@ export default function Home() {
       </div>
       <div className="px-6">
         {reservation ? (
-          <div className="mb-5 mt-12 space-y-6 bg-white shadow-md border-slate-100 border p-6 rounded-xl">
-            <div className="font-bold text-lg text-center text-green-600">
-              予約済み
-            </div>
-            <div className="space-y-4">
-              <div className="text-sm text-gray-600">
-                <div className="font-semibold">予約番号</div>
-                <div className="text-lg font-mono">{reservation.id}</div>
-              </div>
-              <div className="text-sm text-gray-600">
-                <div className="font-semibold">予約時間</div>
-                <div className="text-lg">
-                  {formatTime(reservation.reservationTime)}
-                </div>
-              </div>
-            </div>
-            <div className="border-t pt-4">
-              <CancelDialog>
-                <Button variant="outline" className="w-full" size="lg">
-                  <CircleSlashIcon />
-                  予約をキャンセルする
-                </Button>
-              </CancelDialog>
-            </div>
-          </div>
+          <ReservationStatus reservation={reservation} />
         ) : (
           <>
             <div className="mb-5 mt-12 space-y-8 bg-white shadow-md border-slate-100 border p-4 rounded-xl">
@@ -201,7 +170,10 @@ export default function Home() {
                 現在の待ち時間
               </div>
               <div className="text-center text-2xl">
-                <span className="text-red-500 text-6xl font-bold">{currentWaitTime}</span>分
+                <span className="text-red-500 text-6xl font-bold">
+                  {currentWaitTime}
+                </span>
+                分
               </div>
               <div className="text-xs text-gray-500 text-right">
                 {new Date().getHours()}時{new Date().getMinutes()}分時点
