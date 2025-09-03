@@ -18,6 +18,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
   const [justReserved, setJustReserved] = useState(false);
+  const [currentWaitTime, setCurrentWaitTime] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,6 +73,26 @@ export default function Home() {
     };
 
     checkReservation();
+  }, []);
+
+  // 待ち時間を取得
+  useEffect(() => {
+    const fetchWaitTime = async () => {
+      try {
+        const response = await fetch("/api/wait-time");
+        const data = await response.json();
+        if (data.success) {
+          setCurrentWaitTime(data.waitTimeMinutes);
+        }
+      } catch (error) {
+        console.error("Failed to fetch wait time:", error);
+      }
+    };
+
+    fetchWaitTime();
+    // 30秒ごとに待ち時間を更新
+    const interval = setInterval(fetchWaitTime, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const formatTime = (dateString: string) => {
@@ -180,7 +201,7 @@ export default function Home() {
                 現在の待ち時間
               </div>
               <div className="text-center text-2xl">
-                <span className="text-red-500 text-6xl font-bold">2</span>分
+                <span className="text-red-500 text-6xl font-bold">{currentWaitTime}</span>分
               </div>
               <div className="text-xs text-gray-500 text-right">
                 {new Date().getHours()}時{new Date().getMinutes()}分時点

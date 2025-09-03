@@ -92,6 +92,97 @@ export async function POST() {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Reservation ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // キャンセルする予約を取得
+    const cancelledReservation = await kv.get<Reservation>(`reservation:${id}`);
+    
+    if (!cancelledReservation) {
+      return NextResponse.json(
+        { success: false, error: "Reservation not found" },
+        { status: 404 }
+      );
+    }
+
+    // キャンセルする予約の時間
+    const cancelledTime = new Date(cancelledReservation.reservationTime);
+    
+    // 全ての予約IDを時系列順で取得
+    const allReservationIds = await kv.zrange("reservations", 0, -1);
+    
+    // キャンセルする予約より後の予約を特定
+    let foundCancelled = false;
+    const reservationsToUpdate: { id: string; reservation: Reservation }[] = [];
+    
+    for (const resId of allReservationIds) {
+      if (resId === id) {
+        foundCancelled = true;
+        continue;
+      }
+      
+      if (foundCancelled) {
+        const reservation = await kv.get<Reservation>(`reservation:${resId}`);
+        if (reservation) {
+          const resTime = new Date(reservation.reservationTime);
+          // キャンセルした予約より後の時間の予約のみ更新
+          if (resTime > cancelledTime) {
+            reservationsToUpdate.push({ id: resId as string, reservation });
+          }
+        }
+      }
+    }
+    
+    // 後続の予約を2分前にずらす
+    for (const { id: resId, reservation } of reservationsToUpdate) {
+      const newTime = new Date(reservation.reservationTime);
+      newTime.setMinutes(newTime.getMinutes() - 2);
+      
+      const updatedReservation: Reservation = {
+        ...reservation,
+        reservationTime: newTime.toISOString(),
+      };
+      
+      await kv.set(`reservation:${resId}`, updatedReservation);
+    }
+    
+    // キャンセルする予約を削除
+    await kv.del(`reservation:${id}`);
+    await kv.zrem("reservations", id);
+    
+    // cookieを削除するようレスポンスに指示
+    const response = NextResponse.json({
+      success: true,
+      message: "Reservation cancelled successfully",
+    });
+    
+    response.cookies.set("reservationId", "", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 0, // 即座に削除
+      path: "/",
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Failed to cancel reservation:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to cancel reservation" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
