@@ -13,16 +13,9 @@ interface Reservation {
   reservationTime: string;
 }
 
-interface ReservationResponse {
-  success: boolean;
-  reservation: Reservation;
-  isExpired: boolean;
-  queuePosition: number;
-}
 
 export default function Home() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
-  const [queuePosition, setQueuePosition] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
   const [justReserved, setJustReserved] = useState(false);
@@ -46,7 +39,7 @@ export default function Home() {
       if (reservationId) {
         try {
           const response = await fetch(`/api/reservations?id=${reservationId}`);
-          const data: ReservationResponse = await response.json();
+          const data = await response.json();
 
           if (data.success && data.reservation) {
             if (data.isExpired) {
@@ -55,14 +48,19 @@ export default function Home() {
                 "reservationId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
               setReservation(null);
             } else {
-              setReservation(data.reservation);
-              setQueuePosition(data.queuePosition || 0);
-              // URLパラメータをチェックして新規予約かどうか確認
-              const urlParams = new URLSearchParams(window.location.search);
-              if (urlParams.get("reserved") === "true") {
-                setJustReserved(true);
-                // URLからパラメータを削隔
-                window.history.replaceState({}, "", window.location.pathname);
+              // 初回読み込み時も順番がマイナスの場合はクリア
+              if (data.queuePosition < 0) {
+                document.cookie = "reservationId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                setReservation(null);
+              } else {
+                setReservation(data.reservation);
+                // URLパラメータをチェックして新規予約かどうか確認
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get("reserved") === "true") {
+                  setJustReserved(true);
+                  // URLからパラメータを削除
+                  window.history.replaceState({}, "", window.location.pathname);
+                }
               }
             }
           } else {
@@ -81,8 +79,7 @@ export default function Home() {
       setIsLoading(false);
     };
 
-    const interval = setInterval(checkReservation, 30000);
-    return () => clearInterval(interval);
+    checkReservation();
   }, []);
 
   // 待ち時間を取得
@@ -170,10 +167,7 @@ export default function Home() {
       </div>
       <div className="px-6">
         {reservation ? (
-          <ReservationStatus
-            reservation={reservation}
-            queuePosition={queuePosition}
-          />
+          <ReservationStatus reservation={reservation} />
         ) : (
           <>
             <div className="mb-5 mt-12 space-y-8 bg-white shadow-md border-slate-100 border p-4 rounded-xl">

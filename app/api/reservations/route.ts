@@ -214,7 +214,11 @@ export async function GET(request: Request) {
     
     // 前に何人いるか計算
     let queuePosition = 0;
-    if (!isExpired) {
+    
+    // 自分のターンが完全に終了している場合は-1を返す
+    if (isExpired) {
+      queuePosition = -1;
+    } else {
       // 全ての予約IDを時系列順で取得
       const allReservationIds = await kv.zrange("reservations", 0, -1);
       

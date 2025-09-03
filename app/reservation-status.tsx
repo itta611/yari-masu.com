@@ -3,6 +3,7 @@
 import { CircleSlashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CancelDialog } from "./cancel-dialog";
+import { useEffect, useState } from "react";
 
 interface Reservation {
   id: string;
@@ -12,13 +13,38 @@ interface Reservation {
 
 interface ReservationStatusProps {
   reservation: Reservation;
-  queuePosition?: number;
 }
 
 export function ReservationStatus({
   reservation,
-  queuePosition = 0,
 }: ReservationStatusProps) {
+  const [queuePosition, setQueuePosition] = useState(0);
+  
+  useEffect(() => {
+    const fetchQueuePosition = async () => {
+      try {
+        const response = await fetch(`/api/queue-position?id=${reservation.id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          // 順番がマイナスまたは期限切れの場合はcookieを削除してリロード
+          if (data.queuePosition < 0 || data.isExpired) {
+            document.cookie = "reservationId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.reload();
+          } else {
+            setQueuePosition(data.queuePosition);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch queue position:", error);
+      }
+    };
+
+    fetchQueuePosition();
+    // 30秒ごとに順番を更新
+    const interval = setInterval(fetchQueuePosition, 30000);
+    return () => clearInterval(interval);
+  }, [reservation.id]);
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getHours()}時${date
