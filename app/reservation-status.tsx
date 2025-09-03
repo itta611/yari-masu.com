@@ -15,21 +15,22 @@ interface ReservationStatusProps {
   reservation: Reservation;
 }
 
-export function ReservationStatus({
-  reservation,
-}: ReservationStatusProps) {
+export function ReservationStatus({ reservation }: ReservationStatusProps) {
   const [queuePosition, setQueuePosition] = useState(0);
-  
+
   useEffect(() => {
     const fetchQueuePosition = async () => {
       try {
-        const response = await fetch(`/api/queue-position?id=${reservation.id}`);
+        const response = await fetch(
+          `/api/queue-position?id=${reservation.id}`
+        );
         const data = await response.json();
-        
+
         if (data.success) {
           // 順番がマイナスまたは期限切れの場合はcookieを削除してリロード
           if (data.queuePosition < 0 || data.isExpired) {
-            document.cookie = "reservationId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie =
+              "reservationId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.reload();
           } else {
             setQueuePosition(data.queuePosition);
@@ -75,7 +76,7 @@ export function ReservationStatus({
           <div className="text-lg font-mono">{reservation.id}</div>
         </div>
         <div className="text-sm text-gray-600">
-          <div className="font-semibold">予約時間</div>
+          <div className="font-semibold">予想開始時刻</div>
           <div className="text-lg">
             {formatTime(reservation.reservationTime)}
           </div>
