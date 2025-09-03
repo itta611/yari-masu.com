@@ -19,7 +19,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
   const [justReserved, setJustReserved] = useState(false);
-  const [currentWaitTime, setCurrentWaitTime] = useState(0);
+  const [currentWaitTime, setCurrentWaitTime] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -176,10 +176,16 @@ export default function Home() {
                 現在の待ち時間
               </div>
               <div className="text-center text-2xl">
-                <span className="text-red-500 text-6xl font-bold">
-                  {currentWaitTime}
-                </span>
-                分
+                {currentWaitTime === null ? (
+                  <div className="text-gray-500 text-2xl">読み込み中...</div>
+                ) : (
+                  <>
+                    <span className="text-red-500 text-6xl font-bold">
+                      {currentWaitTime}
+                    </span>
+                    分
+                  </>
+                )}
               </div>
               <div className="text-xs text-gray-500 text-right">
                 {new Date().getHours()}時{new Date().getMinutes()}分時点

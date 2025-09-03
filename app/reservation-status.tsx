@@ -16,7 +16,7 @@ interface ReservationStatusProps {
 }
 
 export function ReservationStatus({ reservation }: ReservationStatusProps) {
-  const [queuePosition, setQueuePosition] = useState(0);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchQueuePosition = async () => {
@@ -60,7 +60,11 @@ export function ReservationStatus({ reservation }: ReservationStatusProps) {
         予約済み
       </div>
       <div className="space-y-4">
-        {queuePosition > 0 ? (
+        {queuePosition === null ? (
+          <div className="text-lg text-center font-bold text-gray-500">
+            読み込み中...
+          </div>
+        ) : queuePosition > 0 ? (
           <div className="text-lg text-center font-bold">
             あなたの前に
             <span className="text-red-500 text-2xl">{queuePosition}</span>
