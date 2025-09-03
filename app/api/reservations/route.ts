@@ -211,11 +211,37 @@ export async function GET(request: Request) {
     const now = new Date();
 
     const isExpired = reservationEndTime < now;
+    
+    // 前に何人いるか計算
+    let queuePosition = 0;
+    if (!isExpired) {
+      // 全ての予約IDを時系列順で取得
+      const allReservationIds = await kv.zrange("reservations", 0, -1);
+      
+      for (const resId of allReservationIds) {
+        if (resId === id) {
+          break;
+        }
+        
+        // その予約の情報を取得
+        const otherReservation = await kv.get<Reservation>(`reservation:${resId}`);
+        if (otherReservation) {
+          const otherEndTime = new Date(otherReservation.reservationTime);
+          otherEndTime.setMinutes(otherEndTime.getMinutes() + 2);
+          
+          // まだ終了していない予約のみカウント
+          if (otherEndTime > now) {
+            queuePosition++;
+          }
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
       reservation,
       isExpired,
+      queuePosition,
     });
   } catch (error) {
     console.error("Failed to fetch reservation:", error);

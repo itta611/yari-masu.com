@@ -13,8 +13,16 @@ interface Reservation {
   reservationTime: string;
 }
 
+interface ReservationResponse {
+  success: boolean;
+  reservation: Reservation;
+  isExpired: boolean;
+  queuePosition: number;
+}
+
 export default function Home() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [queuePosition, setQueuePosition] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
   const [justReserved, setJustReserved] = useState(false);
@@ -38,7 +46,7 @@ export default function Home() {
       if (reservationId) {
         try {
           const response = await fetch(`/api/reservations?id=${reservationId}`);
-          const data = await response.json();
+          const data: ReservationResponse = await response.json();
 
           if (data.success && data.reservation) {
             if (data.isExpired) {
@@ -48,11 +56,12 @@ export default function Home() {
               setReservation(null);
             } else {
               setReservation(data.reservation);
+              setQueuePosition(data.queuePosition || 0);
               // URLパラメータをチェックして新規予約かどうか確認
               const urlParams = new URLSearchParams(window.location.search);
               if (urlParams.get("reserved") === "true") {
                 setJustReserved(true);
-                // URLからパラメータを削除
+                // URLからパラメータを削隔
                 window.history.replaceState({}, "", window.location.pathname);
               }
             }
@@ -72,7 +81,8 @@ export default function Home() {
       setIsLoading(false);
     };
 
-    checkReservation();
+    const interval = setInterval(checkReservation, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // 待ち時間を取得
@@ -94,7 +104,6 @@ export default function Home() {
     const interval = setInterval(fetchWaitTime, 30000);
     return () => clearInterval(interval);
   }, []);
-
 
   const handleReservation = async () => {
     setIsReserving(true);
@@ -161,7 +170,10 @@ export default function Home() {
       </div>
       <div className="px-6">
         {reservation ? (
-          <ReservationStatus reservation={reservation} />
+          <ReservationStatus
+            reservation={reservation}
+            queuePosition={queuePosition}
+          />
         ) : (
           <>
             <div className="mb-5 mt-12 space-y-8 bg-white shadow-md border-slate-100 border p-4 rounded-xl">
