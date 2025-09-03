@@ -1,9 +1,10 @@
 "use client";
 
-import { ClockIcon, UsersIcon } from "lucide-react";
+import { CircleSlashIcon, ClockIcon, UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { CancelDialog } from "./cancel-dialog";
 
 interface Reservation {
   id: string;
@@ -71,14 +72,6 @@ export default function Home() {
       .padStart(2, "0")}分`;
   };
 
-  const calculateWaitTime = (reservationTime: string) => {
-    const now = new Date();
-    const resTime = new Date(reservationTime);
-    const diffMs = resTime.getTime() - now.getTime();
-    const diffMins = Math.max(0, Math.ceil(diffMs / 60000));
-    return diffMins;
-  };
-
   const handleReservation = async () => {
     setIsReserving(true);
     try {
@@ -88,9 +81,9 @@ export default function Home() {
           "Content-Type": "application/json",
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         // ページをリロードして予約状態を反映
         window.location.reload();
@@ -149,18 +142,14 @@ export default function Home() {
                   {formatTime(reservation.reservationTime)}
                 </div>
               </div>
-              <div className="text-sm text-gray-600">
-                <div className="font-semibold">待ち時間</div>
-                <div className="text-2xl font-bold text-red-500">
-                  約{calculateWaitTime(reservation.reservationTime)}分
-                </div>
-              </div>
             </div>
             <div className="border-t pt-4">
-              <Button variant="outline" className="w-full" size="lg">
-                <UsersIcon />
-                予約をキャンセルする
-              </Button>
+              <CancelDialog>
+                <Button variant="outline" className="w-full" size="lg">
+                  <CircleSlashIcon />
+                  予約をキャンセルする
+                </Button>
+              </CancelDialog>
             </div>
           </div>
         ) : (
@@ -177,9 +166,9 @@ export default function Home() {
                 {new Date().getHours()}時{new Date().getMinutes()}分時点
               </div>
             </div>
-            <Button 
-              className="w-full mt-2" 
-              size="lg" 
+            <Button
+              className="w-full mt-2"
+              size="lg"
               onClick={handleReservation}
               disabled={isReserving}
             >
