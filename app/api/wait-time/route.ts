@@ -24,9 +24,9 @@ export async function GET() {
       );
 
       if (latestReservation?.reservationTime) {
-        // 最新の予約の終了時間（reservationTime + 2分）
+        // 最新の予約の終了時間（reservationTime + 1分）
         const latestEndTime = new Date(latestReservation.reservationTime);
-        latestEndTime.setMinutes(latestEndTime.getMinutes() + 2);
+        latestEndTime.setMinutes(latestEndTime.getMinutes() + 1);
 
         if (latestEndTime > now) {
           // 待ち時間を計算（ミリ秒を分に変換）

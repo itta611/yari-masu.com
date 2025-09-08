@@ -32,9 +32,9 @@ export async function POST() {
       );
 
       if (latestReservation && latestReservation.reservationTime) {
-        // 最新の予約の終了時間（reservationTime + 2分）
+        // 最新の予約の終了時間（reservationTime + 1分）
         const latestEndTime = new Date(latestReservation.reservationTime);
-        latestEndTime.setMinutes(latestEndTime.getMinutes() + 2);
+        latestEndTime.setMinutes(latestEndTime.getMinutes() + 1);
 
         if (latestEndTime > now) {
           // 最新の予約がまだ終了していない場合、その終了時間を新しい予約時間とする
@@ -142,10 +142,10 @@ export async function DELETE(request: Request) {
       }
     }
     
-    // 後続の予約を2分前にずらす
+    // 後続の予約を1分前にずらす
     for (const { id: resId, reservation } of reservationsToUpdate) {
       const newTime = new Date(reservation.reservationTime);
-      newTime.setMinutes(newTime.getMinutes() - 2);
+      newTime.setMinutes(newTime.getMinutes() - 1);
       
       const updatedReservation: Reservation = {
         ...reservation,
@@ -188,11 +188,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
+    // IDが指定されていない場合は全ての予約を返す（管理者ページ用）
     if (!id) {
-      return NextResponse.json(
-        { success: false, error: "Reservation ID is required" },
-        { status: 400 }
-      );
+      const allReservationIds = await kv.zrange("reservations", 0, -1);
+      const reservations: Reservation[] = [];
+      
+      for (const resId of allReservationIds) {
+        const reservation = await kv.get<Reservation>(`reservation:${resId}`);
+        if (reservation) {
+          reservations.push(reservation);
+        }
+      }
+      
+      return NextResponse.json({
+        success: true,
+        reservations,
+        total: reservations.length,
+      });
     }
 
     // 特定のIDの予約を取得
@@ -205,9 +217,9 @@ export async function GET(request: Request) {
       );
     }
 
-    // 予約が期限切れかチェック（予約時間 + 2分）
+    // 予約が期限切れかチェック（予約時間 + 1分）
     const reservationEndTime = new Date(reservation.reservationTime);
-    reservationEndTime.setMinutes(reservationEndTime.getMinutes() + 2);
+    reservationEndTime.setMinutes(reservationEndTime.getMinutes() + 1);
     const now = new Date();
 
     const isExpired = reservationEndTime < now;
@@ -231,7 +243,7 @@ export async function GET(request: Request) {
         const otherReservation = await kv.get<Reservation>(`reservation:${resId}`);
         if (otherReservation) {
           const otherEndTime = new Date(otherReservation.reservationTime);
-          otherEndTime.setMinutes(otherEndTime.getMinutes() + 2);
+          otherEndTime.setMinutes(otherEndTime.getMinutes() + 1);
           
           // まだ終了していない予約のみカウント
           if (otherEndTime > now) {

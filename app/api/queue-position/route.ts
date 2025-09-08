@@ -31,9 +31,9 @@ export async function GET(request: Request) {
 
     const now = new Date();
     
-    // 予約が期限切れかチェック（予約時間 + 2分）
+    // 予約が期限切れかチェック（予約時間 + 1分）
     const reservationEndTime = new Date(reservation.reservationTime);
-    reservationEndTime.setMinutes(reservationEndTime.getMinutes() + 2);
+    reservationEndTime.setMinutes(reservationEndTime.getMinutes() + 1);
     const isExpired = reservationEndTime < now;
     
     // 前に何人いるか計算
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         const otherReservation = await kv.get<Reservation>(`reservation:${resId}`);
         if (otherReservation) {
           const otherEndTime = new Date(otherReservation.reservationTime);
-          otherEndTime.setMinutes(otherEndTime.getMinutes() + 2);
+          otherEndTime.setMinutes(otherEndTime.getMinutes() + 1);
           
           // まだ終了していない予約のみカウント
           if (otherEndTime > now) {
